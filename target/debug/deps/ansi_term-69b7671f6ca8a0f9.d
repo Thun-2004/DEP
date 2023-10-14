@@ -1,0 +1,13 @@
+/Users/thun/Documents/GitHub/DEP/target/debug/deps/ansi_term-69b7671f6ca8a0f9.rmeta: /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/lib.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/ansi.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/style.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/difference.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/display.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/write.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/windows.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/util.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/debug.rs
+
+/Users/thun/Documents/GitHub/DEP/target/debug/deps/ansi_term-69b7671f6ca8a0f9.d: /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/lib.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/ansi.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/style.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/difference.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/display.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/write.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/windows.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/util.rs /Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/debug.rs
+
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/lib.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/ansi.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/style.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/difference.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/display.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/write.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/windows.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/util.rs:
+/Users/thun/.cargo/registry/src/index.crates.io-6f17d22bba15001f/ansi_term-0.12.1/src/debug.rs:
