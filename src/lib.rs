@@ -1,10 +1,13 @@
 use clap::{App, Arg};
 use std::error::Error;
-use serde_json::{Value};
-use bson::Document; 
+use serde_json::{Value, Number};
+use bson::{Document , Bson}; 
 use std::fs;
 use std::fs::File;
 use std::io::{self, Write};
+use rmp::encode; 
+use rmp::encode::Encoder; 
+// use rmp::Value as RmpValue; 
 
 
 //input format
@@ -96,14 +99,14 @@ pub fn get_args() -> MyResult<Config>{
 pub fn run(config: Config) -> MyResult<()>{
     println!("{:?}", config);
     let mut file = File::create("output.bson")?; 
-    let content = read_file(&config.filename)?;
+    let content = read_json_file(&config.filename)?;
     let doc = json_to_bson(&content);
     let bytes = bson::to_vec(&doc).unwrap();
     file.write_all(&bytes).expect("Write failed");
     Ok(())
 }
 
-pub fn read_file(filepath: &str) -> MyResult<String>{
+pub fn read_json_file(filepath: &str) -> MyResult<String>{
     let content = fs::read_to_string(filepath).expect("Unable to read the file");
     Ok(content)
 }
@@ -115,7 +118,7 @@ pub fn read_file(filepath: &str) -> MyResult<String>{
 //     Ok(())
 // }
 
-//JSON to BSON 
+//JSON to BSON : cargo run -- "input.json" --bson
 pub fn json_to_bson(str_content: &str) -> Document{
     let json_content: Value = serde_json::from_str(str_content).expect("Failed to parse to JSON");
     match json_content {
@@ -132,6 +135,7 @@ pub fn json_to_bson(str_content: &str) -> Document{
 
 fn str_to_json(value: Value) -> bson::Bson{
     match value {
+        //see if there's any other type 
         Value::Null => bson::Bson::Null,
         Value::Bool(b) => bson::Bson::Boolean(b),
         Value::Number(n) => {
@@ -155,6 +159,90 @@ fn str_to_json(value: Value) -> bson::Bson{
         }
     }
 }
+
+//BSON to JSON 
+//add read bson and write json
+pub fn bson_to_json(doc: &Document) -> Value{
+    let mut json_map = serde_json::Map::new();
+    for (key, value) in doc.iter(){
+        let json_value = match value{
+            Bson::Double(d) => Value::Number(serde_json::Number::from_f64(*d).unwrap()), 
+            Bson::String(s) => Value::String(s.clone()), 
+            Bson::Array(arr) => {
+                let doc_arr = arr.iter().map(|b| match b{
+                    Bson::Document(document) => Some(document), 
+                    _ => None, 
+                }).collect::<Vec<Option<&Document>>>();
+            
+                let json_array: Vec<Value> = doc_arr.iter().map(|elem| bson_to_json(elem.unwrap())).collect(); 
+                Value::Array(json_array)
+            }
+            Bson::Document(doc) => bson_to_json(doc), 
+            Bson::Null => Value::Null,
+            Bson::Boolean(b) => Value::Bool(*b),
+            Bson::RegularExpression(_) => todo!(),
+            Bson::JavaScriptCode(_) => todo!(),
+            Bson::JavaScriptCodeWithScope(_) => todo!(),
+            Bson::Int32(n) => Value::Number::from(n),
+            Bson::Int64(_) => todo!(),
+            Bson::Timestamp(_) => todo!(),
+            Bson::Binary(_) => todo!(),
+            Bson::ObjectId(_) => todo!(),
+            Bson::DateTime(_) => todo!(),
+            Bson::Symbol(_) => todo!(),
+            Bson::Decimal128(_) => todo!(),
+            Bson::Undefined => todo!(),
+            Bson::MaxKey => todo!(),
+            Bson::MinKey => todo!(),
+            Bson::DbPointer(_) => todo!(), 
+        };
+        json_map.insert(key.to_string(), json_value); 
+    }
+    Value::Object(json_map)
+}
+
+//JSON to MessagePack
+pub fn json_to_msgpack<W: Write>(encoder: &mut encode::Encoder<W>, value: Value) {
+    match value{
+        Value::Null => encoder.encoder_nil(), 
+        Value::Bool(b) => encoder.encoder_bool(b), 
+        Value::Number(n) => {
+            if n.is_f64(){
+                encoder.encoder_f64(n.as_f64().unwrap());
+            }else if n.is_i64(){
+                encoder.encoder_i64(n.as_i64().unwrap());
+            }else {
+                encoder.encoder_f64*(n.as_f64().unwrap() as f32);
+            }
+        }
+        Value::String(s) => encoder.encode_str(&s), 
+        Value::Array(arr) => {
+            let len = arr.len() as u32;
+            encoder.encode_array_len(len).unwrap(); 
+            for i in arr{
+                json_to_msgpack(encoder, i);
+            }
+        }
+        Value::Object(map) => {
+            let len = map.len() as u32; 
+            encoder.encode_map_len(len).unwrap();
+            for (key, value) in map{
+                encoder.encode_str(key); 
+                json_to_msgpack(encoder, value)
+            }
+                
+        }
+
+    }
+}
+//Messagepack to Json 
+
+
+//JSON to Base64 
+
+//Base64 to json 
+
+
 
 
 
