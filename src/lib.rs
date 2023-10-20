@@ -4,7 +4,7 @@ use serde_json::{Value, Number, json};
 use bson::{Document , Bson}; 
 use std::fs;
 use std::fs::File;
-use std::io::{self, Write};
+use std::io::{self, Write, Read, BufWriter};
 use rmp::{encode, decode::RmpRead}; 
 
 use rmp::Marker; 
@@ -103,23 +103,76 @@ pub fn get_args() -> MyResult<Config>{
 //process data from Struct Config and save to file 
 pub fn run(config: Config) -> MyResult<()>{
     println!("{:?}", config);
-    let mut file = File::create("output.bson")?; 
-    let content = read_json_file(&config.filename)?;
+    let input_file = format!("{}.{}", config.filename, config.filetype);
+    let output_file = format!("{}.{}", config.filename, config.desired_type);
+    match config.desired_type.as_str(){
+        "json" => {
+            let content = read_json_file(&input_file)?;
+            let doc = json_to_bson(&content); 
+            let _ = write_bson_file(&output_file, doc);
+        },
+        "bson" => {
+            let content = read_bson_file(&input_file)?;
+            let json_content = bson_to_json(&content); 
+            let _ = write_json_file(&output_file, json_content);
+        },
+        // "msgpack" => {
+        //     None;
+        // }
+        // "B64" => {
+        //     None;
+        // }
+        _ => {
+            println!("Invalid type");
+        }
+    }
+    // let mut file = File::create("output.bson")?; 
+    // let content = read_json_file(&config.filename)?;
     //for json to bson 
     // let doc = json_to_bson(&content);
     // let bytes: Vec<u8> = bson::to_vec(&doc).unwrap();
     // file.write_all(&bytes).expect("Write failed");
 
+    //for bson to json
+    // let doc = read_bson_file(&config.filename)?;
+    // let json_content = bson_to_json(&doc);
+    // let _ = write_json_file("output.json", json_content);
+    // Ok(())
+
     //for json to msgpack
-    let json_content: Value = serde_json::from_str(&content).expect("Failed to parse to JSON");
-    let result = json_to_msgpack2(json_content);
-    println!("{:?}", result);
+    // let json_content: Value = serde_json::from_str(&content).expect("Failed to parse to JSON");
+    // let result = json_to_msgpack2(json_content);
+    // println!("{:?}", result);
     Ok(())
 }
 
 pub fn read_json_file(filepath: &str) -> MyResult<String>{
     let content = fs::read_to_string(filepath).expect("Unable to read the file");
     Ok(content)
+}
+
+pub fn write_bson_file(filepath: &str, content: Document) -> MyResult<()>{
+    let mut file = File::create(filepath)?; 
+    let bytes: Vec<u8> = bson::to_vec(&content).unwrap();
+    file.write_all(&bytes).expect("Write failed");
+    Ok(())
+}
+
+pub fn read_bson_file(filepath: &str) -> MyResult<Document>{
+    let file = File::open(filepath).expect("Unable to read the file");
+    let mut v: Vec<u8> = Vec::new(); 
+    file.bytes().for_each(|b| v.push(b.unwrap()));
+    let mut reader: Cursor<Vec<u8>> = Cursor::new(v.clone());
+    let doc = bson::Document::from_reader(&mut reader)?;
+    Ok(doc)
+}
+
+pub fn write_json_file(filepath: &str, content: Value) -> MyResult<()>{
+    let mut file = File::create(filepath)?;
+    let mut writer = BufWriter::new(file); 
+    serde_json::to_writer(&mut writer, &content)?;
+    writer.flush().expect("Flush failed");
+    Ok(())
 }
 
 // pub fn write_file(config: Config, content: &Document) -> Result<(), Box<dyn Error>>{
@@ -172,7 +225,6 @@ fn str_to_json(value: Value) -> bson::Bson{
 }
 
 // BSON to JSON 
-// add read bson and write json
 pub fn bson_to_json(doc: &Document) -> serde_json::Value{
     let mut json_map = serde_json::Map::new();
     for (key, value) in doc.iter(){
@@ -196,7 +248,8 @@ pub fn bson_to_json(doc: &Document) -> serde_json::Value{
             Bson::JavaScriptCodeWithScope(_) => todo!(),
             Bson::Int32(n) => serde_json::Value::Number(Number::from(*n)),
             Bson::Int64(n) => serde_json::Value::Number(Number::from(*n)),
-            Bson::Timestamp(t) => serde_json::Value::Number(Number::from(t.timestamp())),
+            // Bson::Timestamp(t) => serde_json::Value::Number(Number::from(t.timestamp())),
+            Bson::Timestamp(t) => serde_json::Value::Null,
             Bson::Binary(_) => todo!(),
             Bson::ObjectId(objid) => Value::String(objid.to_hex()),
             Bson::DateTime(dt) => serde_json::Value::String(dt.try_to_rfc3339_string().unwrap()),
@@ -205,7 +258,9 @@ pub fn bson_to_json(doc: &Document) -> serde_json::Value{
             Bson::Undefined => serde_json::Value::Null,
             Bson::MaxKey => serde_json::Value::Object(serde_json::from_str(r#"{"$maxKey":1}"#).unwrap()),
             Bson::MinKey => serde_json::Value::Object(serde_json::from_str(r#"{"$maxKey":1}"#).unwrap()),
-            Bson::DbPointer(p) => serde_json::Value::Object(serde_json::from_str(&format!(r#"{{"$dbPointer":{},"$id":"{}"}}}}"#, p.get("namespace"), p.id)).unwrap())
+            // Bson::DbPointer(p) => serde_json::Value::Object(serde_json::from_str(&format!(r#"{{"$dbPointer":{},"$id":"{}"}}}}"#, p.get("namespace"), p.id)).unwrap())
+            Bson::DbPointer(p) => serde_json::Value::Null
+
         };
         json_map.insert(key.to_string(), json_value); 
     }
@@ -258,7 +313,6 @@ fn msgpack_to_json_string(msgpack: &[u8]) -> Result<String, &'static str> {
 
 fn msgpack_to_json_value(msgpack: &[u8]) -> Result<Value, &'static str> {
     let cursor = Cursor::new(msgpack);
-
     match RmpRead::read_exact_buf(&mut cursor).unwrap() {
         Ok((marker, data)) => match marker {
             Marker::Null => Ok(Value::Null),
