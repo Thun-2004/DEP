@@ -13,3 +13,5 @@ serde = "1.0"
 serde_bson = "0.0.1"
 rmp = "0.8.12"
 rmp-serde = "1.1.2"
+
+hex="^0.4.3"
