@@ -16,8 +16,8 @@ use rmp::encode::{write_nil, write_bool, write_f32, write_f64, write_u32, write_
 
 // use rmp::Value as RmpValue; 
 
+type MyResult<T> = Result<T, Box<dyn Error>>;//input format
 
-//input format
 #[derive(Debug)]
 pub struct Config{
     filename : String, 
@@ -73,11 +73,13 @@ pub fn get_args() -> MyResult<Config>{
                 .short("x64")
                 .long("base64")
                 .value_name("B64")
-                .help("Convert data to Base64")
+                .help("Convert raw binary data to Base64")
                 .takes_value(false)
                 .required(false)
         )
+        
         .get_matches();
+
     let info = matches.value_of("files").map(|s| s.split(".").collect::<Vec<&str>>()).unwrap();
     let filename = info[0].to_string(); 
     let filetype = info[1].to_string();
@@ -123,9 +125,11 @@ pub fn run(config: Config) -> MyResult<()>{
         // "msgpack" => {
         //     None;
         // }
-        // "B64" => {
-        //     None;
-        // }
+        "B64" => {
+            let content = read_raw_binary(&input_file)?;
+            let base64_content = bin_to_base64(content)?;
+            let _ = write_base64(&output_file, base64_content);
+        }
         _ => {
             println!("Invalid type");
         }
@@ -162,12 +166,25 @@ pub fn write_json_file(filepath: &str, content: Value) -> MyResult<()>{
     Ok(())
 }
 
-pub fn read_msgp_file(filepath: &str) -> MyResult<&[u8]>{
+// pub fn read_msgp_file(filepath: &str) -> MyResult<&[u8]>{
+//     let mut file = File::open(filepath)?;
+//     let mut data: Vec<u8> = Vec::new();
+//     file.read_to_end(&mut data)?;
+//     let byte_slice: &[u8] = &data;
+//     Ok(byte_slice)
+// }
+
+pub fn read_raw_binary(filepath: &str) -> MyResult<Vec<u8>>{
     let mut file = File::open(filepath)?;
-    let mut data: Vec<u8> = Vec::new();
+    let mut data = Vec::new(); 
     file.read_to_end(&mut data)?;
-    let byte_slice: &[u8] = &data;
-    Ok(byte_slice)
+    Ok(data)
+}
+
+pub fn write_base64(filepath: &str, content: String) -> MyResult<()>{
+    let mut file = File::create(filepath)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
 }
 
 //JSON to BSON : cargo run -- "input.json" --bson
@@ -248,7 +265,6 @@ pub fn bson_to_json(doc: &Document) -> serde_json::Value{
             Bson::MinKey => serde_json::Value::Object(serde_json::from_str(r#"{"$maxKey":1}"#).unwrap()),
             // Bson::DbPointer(p) => serde_json::Value::Object(serde_json::from_str(&format!(r#"{{"$dbPointer":{},"$id":"{}"}}}}"#, p.get("namespace"), p.id)).unwrap())
             Bson::DbPointer(p) => serde_json::Value::Null
-
         };
         json_map.insert(key.to_string(), json_value); 
     }
@@ -294,115 +310,208 @@ fn json_to_msgpack(value: Value) -> Vec<String> {
 }
 
 //Messagepack to Json help 
-fn msgpack_to_json_string(msgpack: &[u8]) -> Result<String, &'static str> {
-    let value = msgpack_to_json_value(msgpack)?;
-    let json_string = serde_json::to_string(&value).map_err(|_| "Failed to convert to JSON")?;
-    Ok(json_string)
-}
+// fn msgpack_to_json_string(msgpack: &[u8]) -> Result<String, &'static str> {
+//     let value = msgpack_to_json_value(msgpack)?;
+//     let json_string = serde_json::to_string(&value).map_err(|_| "Failed to convert to JSON")?;
+//     Ok(json_string)
+// }
 
-fn msgpack_to_json_value(msgpack: &[u8]) -> Result<Value, &'static str> {
-    let cursor = Cursor::new(msgpack);
-    match RmpRead::read_exact_buf(&mut cursor).unwrap() {
-        Ok((marker, data)) => match marker {
-            Marker::Null => Ok(Value::Null),
-            Marker::False => Ok(Value::Bool(false)),
-            Marker::True => Ok(Value::Bool(true)),
-            Marker::I32 => Ok(Value::Number(data.as_i64().unwrap().into())),
-            Marker::Str8 | Marker::Bin8 => {
-                let s: String = data.read_str().map_err(|_| "Failed to read string")?;
-                Ok(Value::String(s))
-            }
-            Marker::FixArray(size) => {
-                let mut array = Vec::with_capacity(size as usize);
-                for _ in 0..size {
-                    array.push(msgpack_to_json_value(msgpack)?);
-                }
-            }
-        }
-    }
-}
+// fn msgpack_to_json_value(msgpack: &[u8]) -> Result<Value, &'static str> {
+//     let mut reader = Cursor::new(msgpack);
+//     file.read_to_end(&mut buf).expect("Unable to read the file");
+//     let total_byte = buf.len();
+//     let mut cursor = &buf[..];
+//     match RmpRead::read_exact_buf(&mut cursor).unwrap() {
+//         Ok((marker, data)) => match marker {
+//             Marker::Null => Ok(Value::Null),
+//             Marker::False => Ok(Value::Bool(false)),
+//             Marker::True => Ok(Value::Bool(true)),
+//             Marker::I32 => Ok(Value::Number(data.as_i64().unwrap().into())),
+//             Marker::Str8 | Marker::Bin8 => {
+//                 let s: String = data.read_str().map_err(|_| "Failed to read string")?;
+//                 Ok(Value::String(s))
+//             }
+//             Marker::FixArray(size) => {
+//                 let mut array = Vec::with_capacity(size as usize);
+//                 for _ in 0..size {
+//                     array.push(msgpack_to_json_value(msgpack)?);
+//                 }
+//             }
+//         }
+//     }
+// }
+// fn msgpack_to_json_value(msgpack: &[u8]) -> Result<Value, &'static str> {
+//     let mut reader: Cursor<&[u8]> = Cursor::new(msgpack);
+//     let marker: Marker = MarkerType::read(&mut reader)?;
+
+//     match marker{
+//             Marker::Null => Ok(Value::Null),
+//             Marker::False => Ok(Value::Bool(false)),
+//             Marker::True => Ok(Value::Bool(true)),
+//             Marker::I32 => Ok(Value::Number(data.as_i64().unwrap().into())),
+//             Marker::Str8 | Marker::Bin8 => {
+//                 let s: String = data.read_str().map_err(|_| "Failed to read string")?;
+//                 Ok(Value::String(s))
+//             }
+//             Marker::FixArray(size) => {
+//                 let mut array = Vec::with_capacity(size as usize);
+//                 for _ in 0..size {
+//                     array.push(msgpack_to_json_value(msgpack)?);
+//                 }
+//             }
+//         }
+//     }
+// }
 
 //Bson to Msp
-pub fn bson_to_msgpack(bson_doc: &Document) -> Result<Vec<u8>, ValueWriteError>{
-    let mut buf = Vec::new(); 
-    let elements = bson_doc.iter();
-    write_map_len(&mut buf, elements.count() as u32)?;
+// pub fn bson_to_msgpack(bson_doc: &Document) -> Result<Vec<u8>, ValueWriteError>{
+//     let mut buf = Vec::new(); 
+//     let elements = bson_doc.iter();
+//     write_map_len(&mut buf, elements.count() as u32)?;
 
-    for(key, value) in elements{
-        write_str(&mut buf, key)?;
-        match value{
-            Bson::Array(array) => {
-                write_array_len(&mut buf, array.len() as u32)?;
-                for elem in array.iter(){
-                    bson_value_to_msgpack(elem, &mut buf)?;
-                }
-            }
-            Bson::Document(sub_doc) => {
-                bson_to_msgpack(sub_doc)?;
-            }
-            _ => {
-                let simulated_error = ValueWriteError::InvalidDataWrite("An error occurred during encoding".to_string());
-                return Err(simulated_error);
-            }
-        }
-    }
-    Ok(buf)
-}
+//     for(key, value) in elements{
+//         write_str(&mut buf, key)?;
+//         match value{
+//             Bson::Array(array) => {
+//                 write_array_len(&mut buf, array.len() as u32)?;
+//                 for elem in array.iter(){
+//                     bson_value_to_msgpack(elem, &mut buf)?;
+//                 }
+//             }
+//             Bson::Document(sub_doc) => {
+//                 bson_to_msgpack(sub_doc)?;
+//             }
+//             _ => {
+//                 let simulated_error = ValueWriteError::InvalidDataWrite("An error occurred during encoding".to_string());
+//                 return Err(simulated_error);
+//             }
+//         }
+//     }
+//     Ok(buf)
+// }
 
-pub fn bson_value_to_msgpack(value: &Bson, buf: &mut Vec<u8>) -> Result<(), ValueWriteError>{
 // pub fn bson_value_to_msgpack(value: &Bson, buf: &mut Vec<u8>) -> Result<(), ValueWriteError>{
-    match value{
-        Bson::Double(d) => write_f64(buf, *d)?,
-        Bson::String(s) => write_str(buf, s)?,
-        Bson::Array(array) => {
-            write_array_len(buf, array.len() as u32)?;
-            for element in array.iter(){
-                bson_value_to_msgpack(element, buf)?;
-            }
-        }
-        Bson::Document(doc) => bson_to_msgpack(doc)?,
-        Bson::Null => write_nil(buf)?,
-        Bson::Boolean(b) => write_bool(buf, *b)?,
-        Bson::RegularExpression(reg) => {
-            write_str(buf, &reg.pattern)?;
-            write_str(buf, &reg.options)?;
-        },  
-        Bson::JavaScriptCode(js) => write_str(buf, js), 
-        Bson::JavaScriptCodeWithScope(js_c) => {
-            write_str(buf, &js_c.code)?;
-            bson_to_msgpack(&js_c.scope)?;
-        },  
-        Bson::Int32(n) => write_i32(buf, *n)?,
-        Bson::Int64(n) => write_i64(buf, *n)?,
-        Bson::Timestamp(t) => {
-            write_u32(buf, t.time)?;
-            write_u32(buf, t.increment)?;
-        },
-        Bson::Binary(b) => {
-            let binary = b.bytes.clone();
-            write_bin(buf, &binary).unwrap()
-        }
-        Bson::ObjectId(objid) => write_str(buf, &objid.to_hex())?,
-        Bson::DateTime(dt) => write_str(buf, &dt.try_to_rfc3339_string().unwrap())?,
-        Bson::Symbol(s) => write_str(buf, s)?,
-        Bson::Decimal128(d) => write_str(buf, &d.to_string())?,
-        Bson::Undefined => write_nil(buf)?,
-        Bson::MaxKey => write_str(buf, "$maxKey")?,
-        Bson::MinKey => write_str(buf, "$minKey")?,
-        Bson::DbPointer(p) => write_nil(buf)?
-    }
-    Ok(())
-}
+// // pub fn bson_value_to_msgpack(value: &Bson, buf: &mut Vec<u8>) -> Result<(), ValueWriteError>{
+//     match value{
+//         Bson::Double(d) => write_f64(buf, *d)?,
+//         Bson::String(s) => write_str(buf, s)?,
+//         Bson::Array(array) => {
+//             write_array_len(buf, array.len() as u32)?;
+//             for element in array.iter(){
+//                 bson_value_to_msgpack(element, buf)?;
+//             }
+//         }
+//         Bson::Document(doc) => bson_to_msgpack(doc)?,
+//         Bson::Null => write_nil(buf)?,
+//         Bson::Boolean(b) => write_bool(buf, *b)?,
+//         Bson::RegularExpression(reg) => {
+//             write_str(buf, &reg.pattern)?;
+//             write_str(buf, &reg.options)?;
+//         },  
+//         Bson::JavaScriptCode(js) => write_str(buf, js), 
+//         Bson::JavaScriptCodeWithScope(js_c) => {
+//             write_str(buf, &js_c.code)?;
+//             bson_to_msgpack(&js_c.scope)?;
+//         },  
+//         Bson::Int32(n) => write_i32(buf, *n)?,
+//         Bson::Int64(n) => write_i64(buf, *n)?,
+//         Bson::Timestamp(t) => {
+//             write_u32(buf, t.time)?;
+//             write_u32(buf, t.increment)?;
+//         },
+//         Bson::Binary(b) => {
+//             let binary = b.bytes.clone();
+//             write_bin(buf, &binary).unwrap()
+//         }
+//         Bson::ObjectId(objid) => write_str(buf, &objid.to_hex())?,
+//         Bson::DateTime(dt) => write_str(buf, &dt.try_to_rfc3339_string().unwrap())?,
+//         Bson::Symbol(s) => write_str(buf, s)?,
+//         Bson::Decimal128(d) => write_str(buf, &d.to_string())?,
+//         Bson::Undefined => write_nil(buf)?,
+//         Bson::MaxKey => write_str(buf, "$maxKey")?,
+//         Bson::MinKey => write_str(buf, "$minKey")?,
+//         Bson::DbPointer(p) => write_nil(buf)?
+//     }
+//     Ok(())
+// }
 
 //Msg to Bson
 
 
-
 //encode raw binary data to Base64 
-// pub fn bin_to_base64()
+pub fn bin_to_base64(binary: Vec<u8>) -> MyResult<String>{
+    for i in &binary{
+        println!("{:08b}", i);
+    }
+    const BASE64_CHARS: [u8; 64] = [
+        b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H',
+        b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+        b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X',
+        b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+        b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n',
+        b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+        b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3',
+        b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/'
+    ];
+    let mut result = String::with_capacity((binary.len() + 2 / 3) * 4);
+    let mut buffer = 0;
+    let mut buffer_len = 0; 
+
+    for byte in binary{
+        buffer = (buffer << 8) | (byte as u32);
+        buffer_len += 8; 
+
+        while buffer_len >= 6{
+            let index = (buffer >> (buffer_len - 6)) & 0x3F;
+            result.push(BASE64_CHARS[index as usize] as char);
+            buffer_len -= 6;
+        }
+    }
+    
+    if buffer_len > 0{
+        let index = (buffer << (6 - buffer_len)) & 0x3F; 
+        result.push(BASE64_CHARS[index as usize] as char); 
+    }
+
+    while result.len() % 4 != 0{
+        result.push('=');
+    }
+    println!("{:?}", result);
+    Ok(result)
+}
 
 //Decode Base64 to raw binary data
-// pub fn base64_to_bin()
+pub fn base64_to_bin(base64: String) -> MyResult<Vec<u8>>{
+    const BASE64_CHARS: [u8; 64] = [
+        b'A', b'B', b'C', b'D', b'E', b'F', b'G', b'H',
+        b'I', b'J', b'K', b'L', b'M', b'N', b'O', b'P',
+        b'Q', b'R', b'S', b'T', b'U', b'V', b'W', b'X',
+        b'Y', b'Z', b'a', b'b', b'c', b'd', b'e', b'f',
+        b'g', b'h', b'i', b'j', b'k', b'l', b'm', b'n',
+        b'o', b'p', b'q', b'r', b's', b't', b'u', b'v',
+        b'w', b'x', b'y', b'z', b'0', b'1', b'2', b'3',
+        b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/'
+    ];
+    let mut result = Vec::with_capacity(base64.len() * 3/4);
+    let mut buffer = 0; 
+    let mut buffer_len = 0; 
+
+    for byte in base64.bytes(){
+        if byte == b'='{
+            break;
+        }
+        let value = BASE64_CHARS.iter().position(|&c| c==byte).unwrap() as u32;
+        buffer = (buffer << 6) | value; 
+        buffer_len += 6; 
+
+        if buffer_len >= 8{
+            buffer_len -= 8; 
+            let byte = (buffer >> buffer_len) & 0xFF;
+            result.push(byte as u8);
+        }
+    }
+    Ok(result)
+}
 
 
 
