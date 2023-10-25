@@ -82,3 +82,90 @@
 //         json_map.insert(key.to_string(), json_value); 
 //     }
 // }
+
+
+// pub fn bson_to_msgpack(bson_doc: &Document) -> Result<Vec<u8>, Box<dyn std::error::Error>>{
+//     let mut buf = Vec::new(); 
+//     let elements = bson_doc.iter();
+//     write_map_len(&mut buf, elements.count() as u32)?;
+
+//     for(key, value) in elements{
+//         write_str(&mut buf, key)?;
+//         match value{
+//             Bson::Array(array) => {
+//                 write_array_len(&mut buf, array.len() as u32)?;
+//                 for elem in array.iter(){
+//                     bson_value_to_msgpack(elem, &mut buf)?;
+//                 }
+//             }
+//             Bson::Document(sub_doc) => {
+//                 bson_to_msgpack(sub_doc)?;
+//             }
+//             _ => {
+//                 return Err(Box::new(std::io::Error::new(
+//                     std::io::ErrorKind::InvalidData,
+//                     "Invalid data",
+//                 )))
+//             }
+//         }
+//     }
+//     Ok(buf)
+// }
+
+// pub fn bson_value_to_msgpack(value: &Bson, buf: &mut Vec<u8>) -> Result<(), Box<dyn std::error::Error>>{
+// // pub fn bson_value_to_msgpack(value: &Bson, buf: &mut Vec<u8>) -> Result<(), ValueWriteError>{
+//     match value{
+//         Bson::Double(d) => write_f64( buf, *d)?,
+//         Bson::String(s) => write_str(buf, s)?,
+//         Bson::Array(array) => {
+//             write_array_len(buf, array.len() as u32)?;
+//             for element in array.iter(){
+//                 bson_value_to_msgpack(element, buf)?;
+//             }
+//         }
+//         Bson::Document(doc) => {
+//             bson_to_msgpack(doc);
+//         }
+//         Bson::Null => write_nil(buf)?,
+//         Bson::Boolean(b) => write_bool(buf, *b)?,
+//         Bson::RegularExpression(reg) => {
+//             write_str(buf, &reg.pattern)?;
+//             write_str(buf, &reg.options)?;
+//         },  
+//         Bson::JavaScriptCode(js) => write_str(buf, js).unwrap(), 
+//         Bson::JavaScriptCodeWithScope(js_c) => {
+//             write_str(buf, &js_c.code)?;
+//             bson_to_msgpack(&js_c.scope)?;
+//         },  
+//         Bson::Int32(n) => write_i32(buf, *n)?,
+//         Bson::Int64(n) => write_i64(buf, *n)?,
+//         Bson::Timestamp(t) => {
+//             write_u32(buf, t.time)?;
+//             write_u32(buf, t.increment)?;
+//         },
+//         Bson::Binary(b) => {
+//             let binary = b.bytes.clone();
+//             write_bin(buf, &binary).unwrap()
+//         }
+//         Bson::ObjectId(objid) => write_str(buf, &objid.to_hex())?,
+//         Bson::DateTime(dt) => write_str(buf, &dt.try_to_rfc3339_string().unwrap())?,
+//         Bson::Symbol(s) => write_str(buf, s)?,
+//         Bson::Decimal128(d) => write_str(buf, &d.to_string())?,
+//         Bson::Undefined => write_nil(buf)?,
+//         Bson::MaxKey => write_str(buf, "$maxKey")?,
+//         Bson::MinKey => write_str(buf, "$minKey")?,
+//         Bson::DbPointer(p) => write_nil(buf)?
+//     }
+//     Ok(())
+// }
+
+// pub fn msgpack_to_bson(input: &[u8]) -> MyResult<Document>{
+//     let mut reader = Cursor::new(input);
+//     let mut de = Deserializer::new(reader);
+//     let key_value_pairs: BTreeMap<String, Value> = Deserialize::deserialize(&mut de)?;
+//     let mut bson_doc = Document::new();
+//     for (key, value) in key_value_pairs.iter().rev() {
+//         bson_doc.insert(key.to_string(), value.clone());
+//     }
+//     Ok(bson_doc)
+// }
