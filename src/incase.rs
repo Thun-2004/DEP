@@ -383,3 +383,65 @@
 //         ]),
 //     }
 // ]);
+
+
+// let input = r#"{
+//     "name" : "John", 
+//     "age" : 30, 
+//     "married": false, 
+//     "pet": null, 
+//     "children": [
+//         {
+//             "name": "Ann", 
+//             "age": 5
+//         },
+//         {
+//             "name": "Sally", 
+//             "age": 7
+//         }
+//     ],
+//     "address": {
+//         "street": "21 2nd Street", 
+//         "city": "New York", 
+//         "state": "NY", 
+//         "postalCode": "10021"
+//     },
+//     "car_model" : " "
+// }"#;
+// // let input: &str = r#"{}"#;
+// let value: serde_json::Value = serde_json::from_str(input).unwrap();
+// let content = to_vec(&value).unwrap();
+// let _ = write_msgp_file("input.msgpack", &content);
+
+// let file = File::open("input.msgpack").unwrap();
+// let mut de: Deserializer<rmp_serde::decode::ReadReader<File>> = Deserializer::new(file);
+// let json_value: Value = Deserialize::deserialize(&mut de).unwrap();
+// let bson = json_to_bson(&json_value).unwrap();
+// let _ = write_bson_file("output.bson", bson);
+
+ //json to msgpack
+    //test bson
+    // let person = Person{
+    //     name: "John".to_string(), 
+    //     age: 30,
+    //     married: false,
+    //     pet: None,
+    //     children: vec![
+    //         Child{
+    //             name: "Ann".to_string(), 
+    //             age: 5
+    //         }, 
+    //         Child{
+    //             name: "Sally".to_string(), 
+    //             age: 7
+    //         }
+    //     ],
+    //     address: Address{
+    //         street: "21 2nd Street".to_string(), 
+    //         city: "New York".to_string(), 
+    //         state: "NY".to_string(), 
+    //         postalCode: "10021".to_string()
+    //     },
+    //     car_model: " ".to_string()
+    // };
+    //normally convert to msgpack then binary 

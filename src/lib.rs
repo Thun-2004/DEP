@@ -80,7 +80,7 @@ pub fn get_args() -> MyResult<Config>{
         )
         .arg(
             Arg::with_name("B64")
-                .short("base64")
+                .short("x64")
                 .long("base64")
                 .value_name("B64")
                 .help("Convert raw binary data to Base64")
@@ -88,7 +88,6 @@ pub fn get_args() -> MyResult<Config>{
                 .required(false)
                 .conflicts_with_all(&["json", "bson", "msgpack", "B64"])
         )
-        //might add binary 
         
         .get_matches();
 
