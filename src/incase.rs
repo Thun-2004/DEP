@@ -169,3 +169,98 @@
 //     }
 //     Ok(bson_doc)
 // }
+
+
+
+    //test bson
+    // let person = Person{
+    //     name: "John".to_string(), 
+    //     age: 30,
+    //     married: false,
+    //     pet: None,
+    //     children: vec![
+    //         Child{
+    //             name: "Ann".to_string(), 
+    //             age: 5
+    //         }, 
+    //         Child{
+    //             name: "Sally".to_string(), 
+    //             age: 7
+    //         }
+    //     ],
+    //     address: Address{
+    //         street: "21 2nd Street".to_string(), 
+    //         city: "New York".to_string(), 
+    //         state: "NY".to_string(), 
+    //         postalCode: "10021".to_string()
+    //     },
+    //     car_model: " ".to_string()
+    // };
+    // let mut buf = Vec::new();
+    // let mut buf2 = Vec::new();
+    //normally convert to msgpack then binary    
+    
+    // print_bson(&doc);
+    //println!("{:?}", doc); //pretty-printed BSON just like JSON format
+    // let input = vec![0b01101000, 0b01100101, 0b01101100, 0b01101100, 0b01101111]; 
+    // let mut file = File::create("input.bin").expect("Unable to create file");
+    // let bytes = input.as_slice();
+    // for i in bytes {
+    //     println!("{:b}", i);
+    // }
+    // file.write_all(&bytes).expect("Unable to write data");
+    // //convert byte to binary 
+    // let mut file = File::open("input.bin").expect("Unable to open file");
+    // let mut buffer = Vec::new();
+    // file.read_to_end(&mut buffer).expect("Unable to read data");
+
+    // let output = bin_to_base64(buffer).unwrap();
+    // println!("{:?}", output);
+    // let reverse: Vec<u8> = base64_to_bin(output).unwrap();
+    // println!("{:?}", reverse);
+
+
+
+
+    //create bson doc for test 
+    // let mut document = Document::new();
+    // document.insert("name", Bson::String("John".to_string()));
+    // document.insert("age", Bson::Int32(30));
+    // document.insert("married", Bson::Boolean(false));
+    // document.insert("pet", Bson::Null);
+    // document.insert("children", Bson::Array(vec![
+    //     Bson::Document(doc!{
+    //         "name": Bson::String("Ann".to_string()), 
+    //         "age": Bson::Int32(5)
+    //     }), 
+    //     Bson::Document(doc!{
+    //         "name": Bson::String("Sally".to_string()), 
+    //         "age": Bson::Int32(7)
+    //     })
+    // ]));
+    // document.insert("address", Bson::Document(doc!{
+    //     "street": Bson::String("21 2nd Street".to_string()), 
+    //     "city": Bson::String("New York".to_string()), 
+    //     "state": Bson::String("NY".to_string()), 
+    //     "postalCode": Bson::String("10021".to_string())
+    // }));
+    // document.insert("car_model", Bson::String(" ".to_string()));
+
+    // let _ = write_bson_file2("input.bson", &document);
+
+    // //create json from preexisiting method 
+    // let json:Value = serde_json::from_str(&"{}").unwrap();
+    // let _ = write_json_file("output2.json", json);
+
+
+
+    //create bin for test
+    // let mut file = File::create("input.bin").unwrap();
+    // let data: [u8; 0] = [];  
+    // // let data: [u8; 5] = [0x41, 0x42, 0x43, 0x44, 0x45];  
+    // file.write_all(&data).unwrap();
+
+    // let mut file = File::open("input.bin").unwrap();
+    // let mut b64 = read_raw_binary("input.bin").unwrap();
+    // let b64 = encode(&b64);
+    // let _ = write_base64("output2.b64", b64);
