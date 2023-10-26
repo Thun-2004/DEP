@@ -10,7 +10,8 @@ dependencies = [
  "base64",
  "bson",
  "clap",
- "hex",
+ "hex 0.4.3",
+ "msgpack_simple",
  "predicates 2.1.5",
  "rmp",
  "rmp-serde",
@@ -120,7 +121,7 @@ dependencies = [
  "ahash",
  "base64",
  "bitvec",
- "hex",
+ "hex 0.4.3",
  "indexmap 1.9.3",
  "js-sys",
  "once_cell",
@@ -264,6 +265,12 @@ dependencies = [
 
 [[package]]
 name = "hex"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "805026a5d0141ffc30abb3be3173848ad46a1b1664fe632428479619a3644d77"
+
+[[package]]
+name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
@@ -338,6 +345,16 @@ name = "memchr"
 version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
+
+[[package]]
+name = "msgpack_simple"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0378abb2e031179121c5c80dd88c7f78ce3eef8999648dbdfa40d982e76cb165"
+dependencies = [
+ "byteorder",
+ "hex 0.3.2",
+]
 
 [[package]]
 name = "normalize-line-endings"

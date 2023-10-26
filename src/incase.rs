@@ -264,3 +264,122 @@
     // let mut b64 = read_raw_binary("input.bin").unwrap();
     // let b64 = encode(&b64);
     // let _ = write_base64("output2.b64", b64);
+
+
+//incorrect version of json to msgpack 
+// pub fn json_to_msgpack(value: &Value) -> MyResult<Vec<u8>>{
+//     match value{
+//         Value::Object(map) => {
+//             let mut buf = Vec::new();
+//             for (key, value) in map{
+//                 let key_bytes: Vec<u8> = json_to_msgpack2(&serde_json::Value::String(key.clone()))?;
+//                 buf.extend_from_slice(&key_bytes);
+
+//                 let msg_value = json_to_msgpack2(value)?;
+//                 buf.extend_from_slice(&msg_value);
+//             }
+//             Ok(buf)
+//         }
+//         _ => panic!("Top level JSON must be an object")
+//     }
+// }
+
+// pub fn json_to_msgpack2(value: &Value) -> MyResult<Vec<u8>>{
+//     let mut buf: Vec<u8> = Vec::new();
+//     match value{
+//         Value::Null => write_nil(&mut buf).unwrap(), 
+//         Value::Bool(b) => write_bool(&mut buf, *b)?,
+//         Value::String(s) => write_str(&mut buf, &s)?,
+//         Value::Number(n) => {
+//             if let Some(n) = n.as_f64(){
+//                 write_f64(&mut buf, n)?;
+//             } else if let Some(n) = n.as_i64(){
+//                 write_i32(&mut buf, n as i32)?;
+//             } else {
+//                 write_f32(&mut buf, n.as_f64().unwrap() as f32)?;
+//             }
+//         },
+//         Value::Array(arr) => {
+//             let len = arr.len() as u32; 
+//             write_array_len(&mut buf, len)?;
+//             for elem in arr{
+//                 let _ = json_to_msgpack2(elem);
+//             }
+//         }, 
+
+//         Value::Object(map) => {
+//             let len = map.len() as u32; 
+//             write_map_len(&mut buf, len)?; 
+//             for (key, value) in map{
+//                 write_str(&mut buf, &key)?;
+//                 let _ = json_to_msgpack2(value);
+//             }
+//         }
+//     }
+//     Ok(buf)
+// }
+
+// let message: MsgPack = MsgPack::Map(vec![
+//     MapElement {
+//         key: MsgPack::String("name".to_string()),
+//         value: MsgPack::String("John".to_string()),
+//     },
+//     MapElement {
+//         key: MsgPack::String("age".to_string()),
+//         value: MsgPack::Int(30),
+//     },
+//     MapElement {
+//         key: MsgPack::String("married".to_string()),
+//         value: MsgPack::Boolean(false),
+//     },
+//     MapElement {
+//         key: MsgPack::String("pet".to_string()),
+//         value: MsgPack::Nil,
+//     },
+//     MapElement {
+//         key: MsgPack::String("children".to_string()),
+//         value: MsgPack::Array(vec![
+//             MsgPack::Map(vec![
+//                 MapElement {
+//                     key: MsgPack::String("name".to_string()),
+//                     value: MsgPack::String("Ann".to_string()),
+//                 },
+//                 MapElement {
+//                     key: MsgPack::String("age".to_string()),
+//                     value: MsgPack::Int(5),
+//                 },
+//             ]),
+//             MsgPack::Map(vec![
+//                 MapElement {
+//                     key: MsgPack::String("name".to_string()),
+//                     value: MsgPack::String("Sally".to_string()),
+//                 },
+//                 MapElement {
+//                     key: MsgPack::String("age".to_string()),
+//                     value: MsgPack::Int(7),
+//                 },
+//             ]),
+//         ]),
+//     },
+//     MapElement {
+//         key: MsgPack::String("address".to_string()),
+//         value: MsgPack::Map(vec![
+//             MapElement {
+//                 key: MsgPack::String("street".to_string()),
+//                 value: MsgPack::String("21 2nd Street".to_string()),
+//             },
+//             MapElement {
+//                 key: MsgPack::String("city".to_string()),
+//                 value: MsgPack::String("New York".to_string()),
+//             },
+//             MapElement {
+//                 key: MsgPack::String("state".to_string()),
+//                 value: MsgPack::String("NY".to_string()),
+//             },
+//             MapElement {
+//                 key: MsgPack::String("postalCode".to_string()),
+//                 value: MsgPack::String("10021".to_string()),
+//             },
+//         ]),
+//     }
+// ]);
