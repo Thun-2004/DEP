@@ -1,0 +1,39 @@
+{
+    "name" : "John", 
+    "age" : 30, 
+    "married": false, 
+    "pet": null, 
+    "children": [
+        {
+            "name": "Ann", 
+            "age": 5
+        },
+        {
+            "name": "Sally", 
+            "age": 7
+        } 
+    ],
+    "address": {
+        "street": "21 2nd Street", 
+        "city": "New York", 
+        "state": "NY", 
+        "postalCode": "10021"
+    },
+    "car_model" : " "
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

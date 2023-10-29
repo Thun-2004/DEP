@@ -1,5 +1,5 @@
 use clap::{App, Arg};
-use serde::{Deserialize};
+use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::path::Path;
@@ -8,10 +8,9 @@ use bson::{Document , Bson};
 use std::fs;
 use std::fs::File;
 use std::io::{self, Write, Read, BufWriter, BufReader, BufRead};
-use rmp_serde::{Deserializer};
+use rmp_serde::Deserializer;
 use std::io::Cursor;
 use rmp::encode::{write_nil, write_bool, write_f32, write_f64, write_u32, write_i32, write_i64, write_str, write_array_len, write_map_len, write_bin};
-
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 #[derive(Debug)]
@@ -32,14 +31,13 @@ const BASE64_CHARS: [u8; 64] = [
         b'4', b'5', b'6', b'7', b'8', b'9', b'+', b'/'
 ];
 
-//run : cargo run -- --help
 pub fn get_args() -> MyResult<Config>{
     let matches = App::new("DEF")
         .version("0.1.0")
         .author("Thunyaphon")
         .about("Data exchage format")
         .arg(
-            Arg::with_name("files")
+            Arg::with_name("file")
                 .value_name("FILE")
                 .help("Sets the input file to use")
                 .takes_value(true)
@@ -55,7 +53,7 @@ pub fn get_args() -> MyResult<Config>{
                 .help("Convert data to JSON")
                 .takes_value(false)
                 .required(false)
-                .conflicts_with_all(&["json", "bson", "msgpack", "B64"])
+                .conflicts_with_all(&["bson", "msgpack", "B64"])
 
         )
         .arg(
@@ -66,7 +64,7 @@ pub fn get_args() -> MyResult<Config>{
                 .help("Convert data to BSON")
                 .takes_value(false)
                 .required(false)
-                .conflicts_with_all(&["json", "bson", "msgpack", "B64"])
+                .conflicts_with_all(&["json", "msgpack", "B64"])
         )
         .arg(
             Arg::with_name("msgpack")
@@ -76,7 +74,7 @@ pub fn get_args() -> MyResult<Config>{
                 .help("Convert data to MessagePack")
                 .takes_value(false)
                 .required(false)
-                .conflicts_with_all(&["json", "bson", "msgpack", "B64"])
+                .conflicts_with_all(&["json", "bson", "B64"])
         )
         .arg(
             Arg::with_name("B64")
@@ -86,14 +84,19 @@ pub fn get_args() -> MyResult<Config>{
                 .help("Convert raw binary data to Base64")
                 .takes_value(false)
                 .required(false)
-                .conflicts_with_all(&["json", "bson", "msgpack", "B64"])
+                .conflicts_with_all(&["json", "bson", "msgpack"])
         )
         
         .get_matches();
 
-    let info = matches.value_of("files").map(|s| s.split(".").collect::<Vec<&str>>()).unwrap_or(Vec::new());
-    let filename = info[0].to_string(); 
-    let filetype = info[1].to_string();
+    let info = matches.value_of("file").map(|s| s.split(".").collect::<Vec<&str>>()).unwrap_or(Vec::new());
+    let (filename, filetype) = match info.as_slice(){
+        [filename, filetype] => (filename.to_string(), filetype.to_string()),
+        _ => {
+            eprintln!("Input file needed"); 
+            std::process::exit(1);
+        }
+    };
     let desired_type = if matches.is_present("json"){
         "json".to_string()
     } else if matches.is_present("bson"){
@@ -103,7 +106,8 @@ pub fn get_args() -> MyResult<Config>{
     } else if matches.is_present("B64"){
         "B64".to_string()
     } else {
-        "invalid".to_string()
+        eprintln!("error: input a valid flag");
+        std::process::exit(1);
     };
     
     Ok(Config {
@@ -116,9 +120,17 @@ pub fn get_args() -> MyResult<Config>{
 
 
 pub fn run(config: Config) -> MyResult<()>{
-    println!("{:?}", config);
-    let input_file = format!("{}.{}", config.filename, config.filetype);
-    let output_file = format!("output.{}", config.desired_type);
+    let input_file = format!("../DEP/input/{}.{}", config.filename, config.filetype);
+    let output_file = format!("../DEP/output/{}", config.desired_type);
+    println!("{}", input_file);
+    let _ = File::open(&input_file).unwrap_or_else(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound{
+            eprintln!("File not found: {}", e);
+        }else{
+            panic!("Error opening the file: {}", e);
+        }
+        std::process::exit(1);
+    });
 
     match config.desired_type.as_str(){
         "json" => {
@@ -184,10 +196,12 @@ pub fn run(config: Config) -> MyResult<()>{
             println!("Invalid type");
         }
     }
+    println!("Success convertin {} to {}", config.filetype, config.desired_type);
     Ok(())
 }
 
 pub fn read_json_file(filepath: &str) -> MyResult<Value>{
+    let filepath = format!("{}",filepath);
     let content = fs::read_to_string(filepath).expect("Unable to read the file");
     let content  = serde_json::from_str(&content)?;
     Ok(content)
@@ -199,24 +213,18 @@ pub fn write_bson_file(filepath: &str, content: Document) -> MyResult<()>{
     file.write_all(&bytes).expect("Write failed");
     Ok(())
 }
-pub fn write_bson_file2(filepath: &str, content: &Document) -> MyResult<()>{
-    let mut file = File::create(filepath)?; 
-    let bytes: Vec<u8> = bson::to_vec(&content).unwrap_or(Vec::new());
-    file.write_all(&bytes).expect("Write failed");
-    Ok(())
-}
 
 pub fn read_bson_file(filepath: &str) -> MyResult<Document>{
     let file = File::open(filepath).expect("Unable to read the file");
     let mut v: Vec<u8> = Vec::new(); 
     file.bytes().for_each(|b| v.push(b.unwrap()));
     let mut reader: Cursor<Vec<u8>> = Cursor::new(v.clone());
-    let doc = bson::Document::from_reader(&mut reader)?;
+    let doc: Document = bson::Document::from_reader(&mut reader)?;
     Ok(doc)
 }
 
 pub fn write_json_file(filepath: &str, content: &Value) -> MyResult<()>{
-    let mut file = File::create(filepath)?;
+    let file = File::create(filepath)?;
     let mut writer = BufWriter::new(file); 
     serde_json::to_writer(&mut writer, &content)?;
     writer.flush().expect("Flush failed");
@@ -269,7 +277,6 @@ pub fn read_base64_file(filepath: &str) -> MyResult<String>{
     Ok(data)
 }
 
-//JSON to BSON : cargo run -- "input.json" --bson
 pub fn json_to_bson(json_content: &Value) -> MyResult<Document>{
     match json_content {
         Value::Object(map) => {
@@ -283,22 +290,26 @@ pub fn json_to_bson(json_content: &Value) -> MyResult<Document>{
     }
 }
 
-
 fn json_to_bson2(value: Value) -> bson::Bson{
     match value {
         serde_json::Value::Null => bson::Bson::Null,
         serde_json::Value::Bool(b) => bson::Bson::Boolean(b),
         serde_json::Value::Number(n) => {
-            if n.is_f64(){
-                bson::Bson::Int64(n.as_i64().unwrap())
-            }else if n.is_i64(){
-                bson::Bson::Int32((n.as_i64().unwrap()) as i32)
-            }
-            else {
-                bson::Bson::Int64(n.as_i64().unwrap())
+            if n.is_i64(){
+                if n.as_i64().unwrap() <= i32::MAX as i64 && n.as_i64().unwrap() >= i32::MIN as i64{
+                    bson::Bson::Int32((n.as_i64().unwrap()) as i32)
+                }else{
+                    bson::Bson::Int64(n.as_i64().unwrap())
+                }
+            }else if n.is_f64(){
+                bson::Bson::Double(n.as_f64().unwrap())
+            }else {
+                eprintln!("Unhandled Json number type: {:?}", n);
+                bson::Bson::Null
             }
         }
-        serde_json::Value::String(s) => bson::Bson::String(s), 
+
+        serde_json::Value::String(s) => bson::Bson::String(s),
         serde_json::Value::Array(vec) => {
             let bson_array: Vec<bson::Bson> = vec.into_iter().map(json_to_bson2).collect();
             bson::Bson::Array(bson_array)
@@ -313,7 +324,7 @@ fn json_to_bson2(value: Value) -> bson::Bson{
     }
 }
 
-pub fn bson_to_json(doc: &Document) -> MyResult<serde_json::Value>{
+pub fn bson_to_json(doc: &Document) -> MyResult<Value>{
     let mut json_map = serde_json::Map::new();
     for (key, value) in doc.iter(){
         let json_value = match value{
@@ -369,8 +380,7 @@ pub fn bson_to_json(doc: &Document) -> MyResult<serde_json::Value>{
                 );
                 serde_json::Value::Object(json_map)
             },
-            Bson::Timestamp(t) => serde_json::Value::Null,
-            Bson::Binary(b) => serde_json::Value::String(bin_to_base64(b.bytes.to_vec())?), //needed
+            Bson::Binary(b) => serde_json::Value::String(bin_to_base64(b.bytes.to_vec())?), 
             Bson::ObjectId(objid) => Value::String(objid.to_hex()),
             Bson::DateTime(dt) => serde_json::Value::String(dt.try_to_rfc3339_string()?),
             Bson::Symbol(s) => serde_json::Value::String(s.clone()),
@@ -378,7 +388,7 @@ pub fn bson_to_json(doc: &Document) -> MyResult<serde_json::Value>{
             Bson::Undefined => serde_json::Value::Null,
             Bson::MaxKey => serde_json::Value::Object(serde_json::from_str(r#"{"$maxKey":1}"#)?),
             Bson::MinKey => serde_json::Value::Object(serde_json::from_str(r#"{"$maxKey":1}"#)?),
-            Bson::DbPointer(p) => serde_json::Value::Null
+            Bson::DbPointer(_p) => serde_json::Value::Null
         };
         json_map.insert(key.to_string(), json_value); 
     }
@@ -388,7 +398,7 @@ pub fn bson_to_json(doc: &Document) -> MyResult<serde_json::Value>{
 pub fn json_to_msgpack(value: &Value) -> MyResult<Vec<u8> > {
     match value {
         Value::Object(map) => {
-            let mut buf = Vec::new();
+            let mut buf: Vec<u8> = Vec::new();
             write_map_len(&mut buf, map.len() as u32)?;
 
             for (key, value) in map {
@@ -396,7 +406,6 @@ pub fn json_to_msgpack(value: &Value) -> MyResult<Vec<u8> > {
                 let msg_value = json_to_msgpack2(value)?;
                 buf.extend_from_slice(&msg_value);
             }
-
             Ok(buf)
         }
         _ => panic!("Top level JSON must be an object"),
@@ -412,9 +421,17 @@ pub fn json_to_msgpack2(value: &Value) -> MyResult<Vec<u8> > {
         Value::String(s) => write_str(&mut buf, s)?,
         Value::Number(n) => {
             if let Some(n) = n.as_i64() {
-                write_i64(&mut buf, n)?;
-            } else {
+                if n <= i32::MAX as i64 && n >= i32::MIN as i64{
+                    write_i32(&mut buf, n as i32)?;
+                }else{
+                    write_i64(&mut buf, n)?;
+                }
+                
+            } else if n.is_f64(){
                 write_f64(&mut buf, n.as_f64().unwrap())?;
+            } else{
+                eprintln!("Unhandled Json number type: {:?}", n);   
+                write_nil(&mut buf)?
             }
         }
         Value::Array(arr) => {
@@ -449,7 +466,7 @@ pub fn msgpack_to_string(filename: &str) -> String{
 }
 
 pub fn msgpack_to_json(msgpack_data: &[u8]) -> MyResult<Value> {
-    let mut reader = Cursor::new(msgpack_data);
+    let reader = Cursor::new(msgpack_data);
     let mut de = Deserializer::new(reader);
 
     let key_value_pairs: BTreeMap<String, Value> = Deserialize::deserialize(&mut de)?;
@@ -475,7 +492,6 @@ pub fn msgpack_to_bson(input: &[u8]) -> MyResult<Document>{
 }
 
 pub fn bin_to_base64(binary: Vec<u8>) -> MyResult<String>{
-    
     let mut result = String::with_capacity((binary.len() + 2 / 3) * 4);
     let mut buffer = 0;
     let mut buffer_len = 0; 

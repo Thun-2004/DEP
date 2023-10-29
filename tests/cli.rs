@@ -110,7 +110,6 @@ fn run(input_file: &str, expected_file: &str) -> TestResult{
     Ok(())
 }
 
-//json conversion 
 #[test]
 fn test_empty_json_to_bson() -> TestResult{
     let input = "tests/inputs/empty_json.json"; 
@@ -135,7 +134,6 @@ fn test_full_json_to_msgpack() -> TestResult{
     run(input, "tests/expected/full_json.msgpack")
 }
 
-//bson conversion
 #[test]
 fn test_empty_bson_to_json() -> TestResult{
     let input = "./tests/inputs/empty_bson.bson";
@@ -161,7 +159,6 @@ fn test_full_bson_to_msgpack() -> TestResult{
 }
 
 
-// msgpack conversion 
 #[test]
 fn test_empty_msgpack_to_json() -> TestResult{
     let input = "./tests/inputs/empty_msgpack.msgpack";
@@ -187,7 +184,6 @@ fn test_full_msgpack_to_bson() -> TestResult{
     run(input, "./tests/expected/full_msgpack.bson")
 }
 
-//binary conversion
 #[test]
 fn test_full_bin_to_base64() -> TestResult{
     let input = "./tests/inputs/raw_bin.bin";
